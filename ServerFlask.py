@@ -2,15 +2,18 @@ from flask import Flask, request, jsonify          # Import Flask web framework,
 import numpy as np                                 # Import NumPy for numerical array handling
 import joblib                                     # Import joblib to load the trained ML model and scaler
 import datetime                                   # Import datetime to timestamp firewall events
-import json                                       # Import json to serialize events into log format
+import json
+import pandas as pd
+# Import json to serialize events into log format
 import os                                         # Import os for filesystem checks and operations
-
+# 19/01/2026
 # ================================================
 # FIREWALL CONFIGURATION PARAMETERS
 # ================================================
 THRESHOLD = 0.50                                  # Probability threshold above which traffic is classified as malicious
 BLOCK_IPS_FILE = "blocked_ips.txt"                # File used to persistently store blocked IP addresses
 LOG_FILE = "firewall_logs.jsonl"                  # Log file storing one JSON event per line
+
 
 # ================================================
 # RUNTIME FIREWALL STATISTICS
@@ -28,7 +31,9 @@ stats = {
 # ================================================
 print("Loading model & scaler…")                  # Log message indicating startup phase
 model = joblib.load("random_forest_model.pkl")    # Load the trained Random Forest classifier from disk
-scaler = joblib.load("scaler.pkl")                # Load the StandardScaler used during training
+scaler = joblib.load("scaler.pkl")
+feature_names = joblib.load("feature_names.pkl")
+# Load the StandardScaler used during training
 print("Model loaded.")                            # Confirm successful loading
 
 app = Flask(__name__)                             # Instantiate the Flask web application
@@ -63,8 +68,13 @@ def predict():                                     # Function handling predictio
     try:
         data = request.get_json()                  # Parse JSON payload from incoming HTTP request
 
-        features = np.array(data["features"]).reshape(1, -1)
-        # Convert the feature list into a NumPy array shaped for model input
+
+        features_df = pd.DataFrame(
+            [data["features"]],
+            columns=feature_names
+        )
+
+        features_scaled = scaler.transform(features_df)
 
         source_ip = data.get("ip", "unknown")
         # Extract source IP if provided, otherwise default to "unknown"
@@ -83,7 +93,7 @@ def predict():                                     # Function handling predictio
         # ========================================
         # FEATURE NORMALIZATION
         # ========================================
-        features_scaled = scaler.transform(features)
+        features_scaled = scaler.transform(features_df)
         # Apply the same scaling used during model training
 
         # ========================================
@@ -136,7 +146,13 @@ def predict():                                     # Function handling predictio
         return jsonify(event)                 # Return decision to the client
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({
+            "prediction": "ERROR",
+            "probability": 0.0,
+            "action": "ERROR",
+            "error": str(e)
+        }), 400
+
         # Return error message if request processing fails
 
 # ================================================

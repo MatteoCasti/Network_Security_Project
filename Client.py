@@ -54,13 +54,13 @@ for i, row in df.iterrows():
     # Send an HTTP POST request containing the feature vector as JSON payload
 
     result = response.json()
-    # Parse the JSON response returned by the server
 
-    prediction = result["prediction"]
-    # Extract the predicted class ("BENIGN" or "MALICIOUS") from the response
+    if "error" in result:
+        print(f"[{i}] ❌ SERVER ERROR: {result['error']}")
+        continue
 
-    prob = result["probability"]
-    # Extract the predicted probability of malicious traffic
+    prediction = result.get("prediction", "UNKNOWN")
+    prob = result.get("probability", 0.0)
 
     # =====================================================
     # OUTPUT RESULT (GROUND TRUTH vs PREDICTION)
