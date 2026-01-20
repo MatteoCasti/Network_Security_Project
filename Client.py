@@ -15,7 +15,7 @@ SERVER_URL = "http://127.0.0.1:8080/predict"
 # LOAD DATASET
 # =========================================================
 df = pd.read_csv("client_data.csv")
-print(f"📤 Inviando {len(df)} richieste al server...")
+print(f" Inviando {len(df)} richieste al server...")
 
 y_true = []
 y_scores = []
@@ -42,7 +42,7 @@ for i, row in df.iterrows():
     result = response.json()
 
     if "error" in result:
-        print(f"[{i}] ❌ SERVER ERROR: {result['error']}")
+        print(f"[{i}]  SERVER ERROR: {result['error']}")
         continue
 
     y_scores.append(float(result["probability"]))
@@ -59,7 +59,7 @@ session.close()
 fpr, tpr, _ = roc_curve(y_true, y_scores)
 roc_auc = auc(fpr, tpr)
 
-print(f"\n📈 AUC = {roc_auc:.4f}")
+print(f"\n AUC = {roc_auc:.4f}")
 
 plt.figure(figsize=(7, 6))
 plt.plot(fpr, tpr, label=f"ROC (AUC={roc_auc:.4f})")
