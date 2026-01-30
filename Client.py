@@ -14,6 +14,7 @@ SERVER_URL = "http://127.0.0.1:8080/predict"
 # Seed for reproducibility across different demo runs
 RANDOM_STATE = 42
 # We constrain the demo size to ensure a quick execution while maintaining statistical relevance
+# max dataset samples 83934
 TOTAL_SAMPLES = 800
 
 # =========================================================
