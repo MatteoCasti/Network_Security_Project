@@ -1,5 +1,5 @@
 # Network_Security_Project  
-## Machine Learning–Based Firewall for Network Intrusion Detection
+## Machine Learning–Based Intrusion Prevention Prototype
 
 ---
 
@@ -7,7 +7,7 @@
 
 This project presents the design and implementation of a **machine learning–based firewall** for **network intrusion detection**, developed within the context of a university **Network Security** course.
 
-The system demonstrates how **flow-level network features**, extracted offline from traffic traces, can be used by a machine learning model to support **security decisions** typically performed by firewalls and intrusion prevention systems.
+The system demonstrates how **flow-level network features** extracted from a labeled traffic dataset, can be used by a machine learning model to support **security decisions** typically performed by firewalls and intrusion prevention systems.
 
 Rather than focusing on advanced model complexity, the project emphasizes:
 
@@ -23,10 +23,16 @@ Rather than focusing on advanced model complexity, the project emphasizes:
 The system is structured according to a **Client–Server architecture**, where machine learning inference is embedded within a software firewall.
 
 ```
-+------------------+        HTTP / REST        +----------------------+
-|  Client (CSV)    |  --------------------->  |  ML Firewall Server  |
-|                  |   feature vectors (POST) |  (Flask + ML Model)  |
-+------------------+                           +----------------------+
++------------------+        HTTP / REST        +----------------------------+
+|  Client (CSV)    |  --------------------->  |   ML Firewall Server        |
+|                  |   feature vectors (POST) |  Flask REST API             |
++------------------+                           |                            |
+                                               |  Random Forest Model       |
+                                               |  StandardScaler            |
+                                               |  Decision Threshold        |
+                                               |  Dynamic IP Blacklist      |
+                                               |  Event Logger              |
+                                               +----------------------------+
 ```
 
 ### 2.1 Client Component
@@ -75,8 +81,8 @@ Each network flow is originally described by **86 statistical features**, captur
 - TCP flag behavior
 - Flow activity and idle periods
 
-To reduce computational overhead, only **10% of the dataset** is randomly sampled for training.
-
+For demonstration purposes, a subset of the dataset is sampled to generate
+a balanced stream of benign and malicious flows during the client simulation.
 ---
 
 ## 4. Feature Engineering and Preprocessing
@@ -173,8 +179,8 @@ For each incoming request:
 P(malicious | flow features)
 
 3. A threshold-based decision rule is applied:
-- Probability ≥ threshold → **BLOCK**
-- Probability < threshold → **ALLOW**
+   - Probability ≥ 0.50 → BLOCK  
+   - Probability < 0.50 → ALLOW
 4. Blocked source IP addresses are added to a persistent blacklist
 
 This mechanism emulates how intrusion prevention systems enforce security policies based on risk estimation.
@@ -194,6 +200,8 @@ Accepts a feature vector and returns a firewall decision.
 "ip": "192.168.1.10"
 }
 ```
+The IP field is optional and used only to simulate source-based blocking.
+If not provided, the firewall treats the source as "unknown".
 The feature vector must follow the exact order used during training.
 
 Response format:
@@ -215,17 +223,11 @@ Response format:
 
 - Recent firewall events
 
-## 8. PCAP Demonstration Set
-- A small PCAP dataset is generated for demonstration purposes:
+## 8. Demonstration Dataset
 
-- Randomly selected from the original dataset
-
-- Contains both benign and malicious traffic
-
-- Used only for visualization and analysis
-
-- Live packet inspection is not performed during inference.
-
+The client replays feature vectors extracted from the dataset in order to
+simulate network flows arriving at the firewall.
+No raw packet capture or PCAP processing is performed during inference.
 ## 9. Limitations
 - No real-time packet capture
 
@@ -234,7 +236,9 @@ Response format:
 - The client simulates traffic flows
 
 - These limitations are intentional and allow the project to focus on security logic and ML integration rather than packet processing.
-
+- The system processes pre-extracted flow features rather than live network traffic.
+- No packet capture or real-time flow extraction is implemented.
+- Dataset replay may produce optimistic evaluation results compared to real deployments.
 ## 10. Execution Instructions
 ### 10.1 Model Training (Google Colab)
 - Open the training notebook in Google Colab
@@ -253,6 +257,9 @@ Response format:
 
 - client_data.csv
 
+```bash
+    pip install flask pandas numpy scikit-learn matplotlib seaborn joblib requests
+```
 ### 10.2 Firewall Server
 
 ```bash
@@ -274,3 +281,16 @@ This project illustrates:
 - How ML predictions translate into firewall actions
 
 - The distinction between detection and enforcement
+
+## 12. Experimental Results
+
+During execution, the client sends multiple flow samples to the server and
+collects the predicted probabilities returned by the model.
+
+The evaluation includes:
+
+- Receiver Operating Characteristic (ROC) curve
+- Area Under the Curve (AUC)
+- Confusion Matrix
+
+These metrics allow the analysis of detection capability and false positive rates.
