@@ -83,6 +83,8 @@ def predict():                                     # Function handling predictio
         # STATEFUL FIREWALL CHECK: BLOCKED IP
         # ========================================
         if source_ip in stats["blocked_ips"]:       # Check if source IP is already blocked
+            print(f"[FIREWALL] BLOCK | IP={source_ip} | "
+                  f"Motivo: IP già in blacklist (nessuna inferenza ML eseguita)")
             return jsonify({
                 "prediction": "MALICIOUS",         # Force malicious classification
                 "probability": 1.0,                 # Assign maximum malicious probability
@@ -112,6 +114,13 @@ def predict():                                     # Function handling predictio
         # Decide whether to block or allow traffic
 
         # ========================================
+        # CONSOLE LOG: ML-BASED PREDICTION
+        # ========================================
+        label = "MALICIOUS" if is_malicious else "BENIGN"
+        print(f"[FIREWALL] {action} | IP={source_ip} | "
+              f"Motivo: Predizione ML → {label} (probabilità={prob:.4f}, soglia={THRESHOLD})")
+
+        # ========================================
         # UPDATE FIREWALL STATISTICS
         # ========================================
         stats["total_requests"] += 1                # Increment total processed requests
@@ -127,6 +136,7 @@ def predict():                                     # Function handling predictio
             stats["blocked_ips"].add(source_ip)     # Add IP to blocked list
             with open(BLOCK_IPS_FILE, "a") as f:    # Persist blocked IP to disk
                 f.write(source_ip + "\n")
+            print(f"[FIREWALL] IP={source_ip} aggiunto alla blacklist")
 
         # ========================================
         # EVENT CONSTRUCTION AND LOGGING
